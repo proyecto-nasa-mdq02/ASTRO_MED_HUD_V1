@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASTRO-MED HUD | NASA HRP Autonomous CDSS</title>
+    <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+    <!-- PANTALLA DE ACCESO DIRECTO DE TRIPULACIÓN (SIN CONTRASEÑA — ESTILO NASA EVERYWEAR) -->
+    <section id="vista-login" class="pantalla-completa">
+        <div class="tarjeta-login">
+            <div class="cabecera-login-top">
+                <div class="insignia-nasa">NASA HUMAN RESEARCH PROGRAM // EVERYWEAR HUD</div>
+                <select id="select-idioma-login" class="select-idioma-compacto" onchange="cambiarIdiomaHUD(this.value)">
+                    <option value="es">Español (ES)</option>
+                    <option value="en">English (EN)</option>
+                </select>
+            </div>
+
+            <div class="marca-login">
+                <div class="emblema-orbital">🛰️</div>
+                <div>
+                    <h1>ASTRO-MED <span>HUD</span></h1>
+                    <span class="tag-version">ORION / CREW DRAGON MEDICAL OS v2.4</span>
+                </div>
+            </div>
+
+            <p id="lbl-login-subtitulo" class="subtitulo">Terminal Biométrica Autónoma sin Contraseña para Tripulación en Misión</p>
+
+            <form id="form-login">
+                <label id="lbl-login-perfil">Seleccioná tu Perfil de Astronauta (Acceso Directo):</label>
+                <select id="login-usuario" required>
+                    <option value="admin">AST-001 — Alicia López (Comandante Médico)</option>
+                    <option value="oficial_santamaria">AST-002 — Marcos Santamaría (Oficial Científico)</option>
+                    <option value="esp_saavedra">AST-003 — Jazmín Saavedra (Especialista de Misión)</option>
+                    <option value="esp_bravo">AST-004 — David Bravo (Especialista de Misión)</option>
+                    <option value="esp_baiz">AST-005 — Zoe Baiz (Oficial Científico)</option>
+                    <option value="esp_garcia">AST-006 — David García (Especialista de Misión)</option>
+                    <option value="esp_jauregui">AST-007 — Iván Jauregui (Especialista de Misión)</option>
+                </select>
+                <button type="submit" id="btn-login-entrar" class="btn-primario">ABRIR MI HUD BIOMÉTRICO</button>
+            </form>
+
+            <div class="accesos-rapidos">
+                <span id="lbl-acceso-rapido">Ingreso 1-Clic:</span>
+                <button type="button" onclick="ingresoDirecto('admin')">Cmd. López</button>
+                <button type="button" onclick="ingresoDirecto('oficial_santamaria')">Of. Santamaría</button>
+                <button type="button" onclick="ingresoDirecto('esp_saavedra')">Esp. Saavedra</button>
+                <button type="button" onclick="ingresoDirecto('esp_bravo')">Esp. Bravo</button>
+                <button type="button" onclick="ingresoDirecto('esp_baiz')">Of. Baiz</button>
+                <button type="button" onclick="ingresoDirecto('esp_garcia')">Esp. García</button>
+                <button type="button" onclick="ingresoDirecto('esp_jauregui')">Esp. Jauregui</button>
+            </div>
+            <p id="login-error" class="texto-error"></p>
+        </div>
+    </section>
+
+    <!-- APLICACIÓN PRINCIPAL (HUD TÁCTICO) -->
+    <main id="vista-hud" class="oculto">
+        <!-- BARRA SUPERIOR DE TELEMETRÍA Y CONTEXTO -->
+        <header class="barra-superior">
+            <div class="bloque-marca">
+                <span class="punto-vivo"></span>
+                <div>
+                    <div class="fila-titulo-hud">
+                        <strong>ASTRO-MED HUD</strong>
+                        <span id="badge-mision-activa" class="chip-mision">🌕 ARTEMIS LUNAR</span>
+                        <span id="badge-latencia" class="chip-latencia">📡 DELAY: 1.3s</span>
+                    </div>
+                    <small id="lbl-operador">Conectando...</small>
+                </div>
+            </div>
+
+            <div class="selector-contexto">
+                <div class="campo-inline">
+                    <label id="lbl-sel-tripulante">Tripulante Monitoreado:</label>
+                    <select id="select-tripulante" onchange="cambiarTripulanteActivo()"></select>
+                </div>
+
+                <div class="campo-inline">
+                    <label id="lbl-sel-entorno">Entorno Operativo (5 Peligros):</label>
+                    <select id="select-entorno" onchange="actualizarInfoEntorno()">
+                        <option value="Transito Espacial (0G)">Tránsito Espacial (0G / Alta Radiación)</option>
+                        <option value="Estacion Espacial">Estación Espacial (Microgravedad)</option>
+                        <option value="Rover Explorador">Rover Explorador (Confinamiento Extremo)</option>
+                        <option value="Base Planetaria">Base Planetaria (Luna / Marte / Europa EVA)</option>
+                    </select>
+                </div>
+
+                <select id="select-idioma-hud" class="select-idioma-compacto" onchange="cambiarIdiomaHUD(this.value)">
+                    <option value="es">🌐 ES</option>
+                    <option value="en">🌐 EN</option>
+                </select>
+            </div>
+
+            <div class="gamificacion-box">
+                <span class="icono-racha">🔥</span>
+                <div>
+                    <small id="lbl-racha-titulo">RACHA VITAL</small>
+                    <strong id="lbl-racha">0 Días Sol</strong>
+                </div>
+                <button id="btn-salir-hud" class="btn-salir" onclick="cerrarSesion()">Cambiar Tripulante</button>
+            </div>
+        </header>
+
+        <!-- GRILLA PRINCIPAL DEL HUD (3 COLUMNAS) -->
+        <div class="grilla-hud">
+            <!-- COLUMNA 1: GEMELO DIGITAL ANATÓMICO INTERACTIVO (SVG DE ALTA PRECISIÓN) -->
+            <section class="panel panel-anatomico">
+                <div class="cabecera-panel">
+                    <h2 id="lbl-gemelo-titulo">GEMELO DIGITAL ANATÓMICO</h2>
+                    <span id="badge-global" class="badge nominal">NOMINAL</span>
+                </div>
+                <p id="lbl-gemelo-inst" class="instruccion-ui">Hacé clic en cada zona del cuerpo para inspeccionar Medidas Estándar NASA, impacto espacial y diagnóstico.</p>
+
+                <div class="contenedor-svg">
+                    <svg id="svg-humano" viewBox="0 0 280 540" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <pattern id="grilla-biometrica" width="20" height="20" patternUnits="userSpaceOnUse">
+                                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(56, 189, 248, 0.08)" stroke-width="1" />
+                            </pattern>
+                            <linearGradient id="brillo-escaner" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stop-color="rgba(56, 189, 248, 0)" />
+                                <stop offset="50%" stop-color="rgba(56, 189, 248, 0.45)" />
+                                <stop offset="100%" stop-color="rgba(56, 189, 248, 0)" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- Fondo de Retícula Táctica y Mira de Calibración -->
+                        <rect width="280" height="540" fill="url(#grilla-biometrica)" />
+                        <circle cx="140" cy="250" r="118" fill="none" stroke="rgba(56, 189, 248, 0.12)" stroke-dasharray="4 6" />
+                        <line x1="140" y1="10" x2="140" y2="530" stroke="rgba(56, 189, 248, 0.1)" stroke-dasharray="2 4" />
+
+                        <!-- Contorno de Traje / Silueta Exterior de Referencia -->
+                        <g stroke="#1e293b" stroke-width="1.8" fill="rgba(15, 23, 42, 0.55)">
+                            <path d="M140 14 C164 14 180 32 180 56 C180 76 168 92 154 96 L154 106 L196 114 C214 118 226 132 228 152 L236 266 C236 276 226 282 218 282 L204 282 L196 172 L186 172 L186 274 L194 494 C194 506 182 514 170 514 L152 514 L144 330 L136 330 L128 514 L110 514 C98 514 86 506 86 494 L94 274 L94 172 L84 172 L76 282 L62 282 C54 282 44 276 44 266 L52 152 C54 132 66 118 84 114 L126 106 L126 96 C112 92 100 76 100 56 C100 32 116 14 140 14 Z" />
+                        </g>
+
+                        <!-- ZONA 1: NEURO_PSICO (Cráneo, Hemisferios Cerebrales y Sistema Vestibular) -->
+                        <g id="zona-NEURO_PSICO" class="zona-clicable nominal" onclick="seleccionarSistema('NEURO_PSICO')">
+                            <path d="M140 20 C160 20 174 35 174 56 C174 75 160 90 140 90 C120 90 106 75 106 56 C106 35 120 20 140 20 Z" />
+                            <!-- Surcos Cerebrales y Tronco Encefálico -->
+                            <path d="M116 50 C118 34 138 30 140 44 C142 30 162 34 164 50 C166 64 154 74 140 72 C126 74 114 64 116 50 Z" fill="rgba(255,255,255,0.22)" stroke="rgba(255,255,255,0.5)" stroke-width="1" />
+                            <path d="M124 48 Q132 42 138 50 M142 50 Q148 42 156 48 M126 58 Q140 64 154 58" fill="none" stroke="#ffffff" stroke-width="1.2" opacity="0.75" />
+                            <rect x="135" y="72" width="10" height="24" rx="4" fill="rgba(255,255,255,0.3)" />
+                            <text x="140" y="55" text-anchor="middle" class="etiqueta-svg">NEURO</text>
+                        </g>
+
+                        <!-- ZONA 2: CARDIO_RAD (Tórax, Pulmones, Corazón y Arteria Carótida) -->
+                        <g id="zona-CARDIO_RAD" class="zona-clicable nominal" onclick="seleccionarSistema('CARDIO_RAD')">
+                            <path d="M96 112 H184 C190 112 194 118 192 126 L186 196 H94 L88 126 C86 118 90 112 96 112 Z" />
+                            <!-- Silueta Pulmonar Bilateral -->
+                            <path d="M102 122 C116 120 128 130 128 150 L126 184 H100 L96 142 C96 130 98 124 102 122 Z" fill="rgba(255,255,255,0.18)" />
+                            <path d="M178 122 C164 120 152 130 152 150 L154 184 H180 L184 142 C184 130 182 124 178 122 Z" fill="rgba(255,255,255,0.18)" />
+                            <!-- Corazón + Arco Aórtico y Carótida -->
+                            <path d="M140 132 C145 125 156 128 156 138 C156 148 144 156 140 162 C136 156 126 148 126 138 C126 128 135 125 140 132 Z" fill="rgba(255,255,255,0.45)" stroke="#ffffff" stroke-width="1.2" />
+                            <path d="M140 128 V96 M146 130 L152 100" fill="none" stroke="#ffffff" stroke-width="1.6" opacity="0.8" />
+                            <!-- Trazo ECG Decorativo -->
+                            <polyline points="102,172 122,172 128,162 134,182 140,156 146,178 152,170 178,170" fill="none" stroke="#ffffff" stroke-width="1.5" opacity="0.85" />
+                            <text x="140" y="148" text-anchor="middle" class="etiqueta-svg">CARDIO / RAD</text>
+                        </g>
+
+                        <!-- ZONA 3: METABOLICO_INMUNE (Abdomen, Hígado, Estómago y Microbioma) -->
+                        <g id="zona-METABOLICO_INMUNE" class="zona-clicable nominal" onclick="seleccionarSistema('METABOLICO_INMUNE')">
+                            <path d="M96 202 H184 L180 278 C180 284 174 288 166 288 H114 C106 288 100 284 100 278 L96 202 Z" />
+                            <!-- Silueta Hepática, Gástrica e Intestinal -->
+                            <path d="M104 212 C122 210 138 216 142 228 C130 234 114 236 104 228 Z" fill="rgba(255,255,255,0.25)" />
+                            <path d="M146 214 C162 212 172 222 168 236 C164 246 148 246 142 236 Z" fill="rgba(255,255,255,0.22)" />
+                            <path d="M112 250 H168 M116 262 H164 M120 274 H160" fill="none" stroke="rgba(255,255,255,0.55)" stroke-width="3" stroke-linecap="round" />
+                            <text x="140" y="246" text-anchor="middle" class="etiqueta-svg">METABÓLICO</text>
+                        </g>
+
+                        <!-- ZONA 4: MUSCULO_ESQUELETICO (Extremidades Superiores, Inferiores y Fémur IMTP) -->
+                        <g id="zona-MUSCULO_ESQUELETICO" class="zona-clicable nominal" onclick="seleccionarSistema('MUSCULO_ESQUELETICO')">
+                            <!-- Brazo Izquierdo y Derecho Anatómicos -->
+                            <path d="M58 124 C66 116 78 118 82 128 L76 274 C74 280 62 280 56 274 L50 154 C50 140 52 130 58 124 Z" />
+                            <path d="M222 124 C214 116 202 118 198 128 L204 274 C206 280 218 280 224 274 L230 154 C230 140 228 130 222 124 Z" />
+                            <!-- Pierna Izquierda y Derecha Anatómicas -->
+                            <path d="M98 296 H134 L128 504 C126 510 100 510 96 504 L92 350 Z" />
+                            <path d="M146 296 H182 L188 350 L184 504 C180 510 154 510 152 504 Z" />
+                            <!-- Ejes Óseos de Fémur/Tibia y Húmero (Densitometría / IMTP) -->
+                            <line x1="68" y1="136" x2="64" y2="260" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round" />
+                            <line x1="212" y1="136" x2="216" y2="260" stroke="rgba(255,255,255,0.45)" stroke-width="3" stroke-linecap="round" />
+                            <line x1="114" y1="310" x2="112" y2="488" stroke="rgba(255,255,255,0.45)" stroke-width="4" stroke-linecap="round" />
+                            <line x1="166" y1="310" x2="168" y2="488" stroke="rgba(255,255,255,0.45)" stroke-width="4" stroke-linecap="round" />
+                            <text x="140" y="395" text-anchor="middle" class="etiqueta-svg">MÚSCULO / ÓSEO</text>
+                        </g>
+
+                        <!-- Haz de Escaneo Biométrico Animado -->
+                        <rect class="escaner-laser" x="20" y="0" width="240" height="18" fill="url(#brillo-escaner)" pointer-events="none" />
+                    </svg>
+                </div>
+
+                <!-- PÍLDORAS DE ACCESO RÁPIDO POR SUBSISTEMA -->
+                <div class="selector-rapido-sistemas">
+                    <button type="button" id="pill-NEURO_PSICO" class="pill-sistema nominal" onclick="seleccionarSistema('NEURO_PSICO')">🧠 NEURO</button>
+                    <button type="button" id="pill-CARDIO_RAD" class="pill-sistema nominal" onclick="seleccionarSistema('CARDIO_RAD')">❤️ CARDIO</button>
+                    <button type="button" id="pill-METABOLICO_INMUNE" class="pill-sistema nominal" onclick="seleccionarSistema('METABOLICO_INMUNE')">🩸 METAB</button>
+                    <button type="button" id="pill-MUSCULO_ESQUELETICO" class="pill-sistema nominal" onclick="seleccionarSistema('MUSCULO_ESQUELETICO')">🦴 MÚSCULO</button>
+                </div>
+
+                <!-- DETALLE DE LA ZONA CLICADA -->
+                <div id="caja-detalle-organo" class="detalle-organo">
+                    <h3 id="titulo-organo">Sistema Seleccionado: Vista General</h3>
+                    <p id="desc-organo">Seleccioná una región anatómica en el modelo interactivo para visualizar cómo le afectan los peligros del vuelo espacial y las Medidas Estándar de la NASA.</p>
+                </div>
+            </section>
+
+            <!-- COLUMNA 2: TRIAGE AUTÓNOMO, PROTOCOLO GUIADO Y GRÁFICOS -->
+            <section class="panel panel-central">
+                <div id="panel-protocolo" class="bloque-triage nominal">
+                    <div class="cabecera-triage">
+                        <strong id="triage-titulo">DIAGNÓSTICO AUTÓNOMO DE MISIÓN (NASA STANDARD MEASURES)</strong>
+                        <span id="triage-tierra" class="tag-tierra">Autonomía Local OK</span>
+                    </div>
+                    <p id="triage-resumen">Cargando telemetría del tripulante...</p>
+                    <div class="instruccion-box">
+                        <strong id="lbl-protocolo-guia">📋 Protocolo e Instrucciones Paso a Paso (Guía para Tripulación):</strong>
+                        <p id="triage-instruccion">Sin acciones correctivas pendientes.</p>
+                    </div>
+                </div>
+
+                <!-- TARJETAS DE INDICADORES BIOMÉTRICOS EN VIVO CON BARRAS DE UMBRAL -->
+                <div class="grilla-kpis">
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <small id="lbl-kpi-pa">Presión Arterial (MAP)</small>
+                            <span class="kpi-tag">CARDIO</span>
+                        </div>
+                        <strong id="kpi-presion">-- / --</strong>
+                        <div class="barra-kpi"><div id="bar-pa" class="barra-kpi-fill" style="width: 60%;"></div></div>
+                        <span id="kpi-map">Media: -- mmHg</span>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <small id="lbl-kpi-fc">Frecuencia Cardíaca</small>
+                            <span class="kpi-tag">ECG</span>
+                        </div>
+                        <strong id="kpi-fc">-- BPM</strong>
+                        <div class="barra-kpi"><div id="bar-fc" class="barra-kpi-fill" style="width: 55%;"></div></div>
+                        <span id="lbl-rango-fc">Nominal: 60-95 BPM</span>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <small id="lbl-kpi-glu">Perfil Bioquímico (Glucosa)</small>
+                            <span class="kpi-tag">BIOCHEM</span>
+                        </div>
+                        <strong id="kpi-glucosa">-- mg/dL</strong>
+                        <div class="barra-kpi"><div id="bar-glu" class="barra-kpi-fill" style="width: 50%;"></div></div>
+                        <span>Nominal: 75-120 mg/dL</span>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <small id="lbl-kpi-temp">Temperatura / Radiación</small>
+                            <span class="kpi-tag">DOSIMETRY</span>
+                        </div>
+                        <strong id="kpi-temp">-- °C</strong>
+                        <div class="barra-kpi"><div id="bar-rad" class="barra-kpi-fill" style="width: 25%;"></div></div>
+                        <span id="kpi-rad">Rad: -- mSv</span>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <small id="lbl-kpi-sueno">Actigrafía Sueño / Ánimo</small>
+                            <span class="kpi-tag">ACTIWATCH</span>
+                        </div>
+                        <strong id="kpi-sueno">-- hs</strong>
+                        <div class="barra-kpi"><div id="bar-sueno" class="barra-kpi-fill" style="width: 75%;"></div></div>
+                        <span id="kpi-animo">Ánimo: -- / 5</span>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-top">
+                            <small id="lbl-kpi-ejer">Ejercicio ARED / IMTP</small>
+                            <span class="kpi-tag">COUNTERMEASURE</span>
+                        </div>
+                        <strong id="kpi-ejercicio">-- min</strong>
+                        <div class="barra-kpi"><div id="bar-ejer" class="barra-kpi-fill" style="width: 80%;"></div></div>
+                        <span id="kpi-evidencia">Evidencia: S/D</span>
+                    </div>
+                </div>
+
+                <!-- GRÁFICO DINÁMICO HISTÓRICO EN CANVAS CON BANDAS DE UMBRAL -->
+                <div class="bloque-grafico">
+                    <div class="cabecera-panel">
+                        <div>
+                            <h3 id="lbl-grafico-titulo">EVOLUCIÓN TEMPORAL DE INDICADORES (15 DÍAS SOL)</h3>
+                            <small id="lbl-grafico-sub" class="sub-grafico">Incluye bandas de umbral clínico NASA HRP y valores puntuales por Sol</small>
+                        </div>
+                        <select id="select-metrica-grafico" onchange="dibujarGraficoEvolucion()">
+                            <option value="frecuencia_cardiaca">Frecuencia Cardíaca (BPM) & Presión Sistólica</option>
+                            <option value="glucosa_mg_dl">Glucosa en Sangre (mg/dL)</option>
+                            <option value="horas_sueno">Actigrafía de Sueño (Horas) & Ánimo</option>
+                        </select>
+                    </div>
+                    <canvas id="canvas-evolucion" width="720" height="245"></canvas>
+                </div>
+            </section>
+
+            <!-- COLUMNA 3: MISIONES, SIMULADOR DE CRISIS Y ENTRADA MULTIMODAL -->
+            <section class="panel panel-acciones">
+                <h2 id="lbl-mision-activa-tit">CAMBIAR MISIÓN ESPACIAL ACTIVA</h2>
+                <p id="lbl-mision-activa-sub" class="instruccion-ui">Conmutá la base de datos entre los 3 escenarios interplanetarios:</p>
+                <div class="botones-crisis">
+                    <button type="button" class="btn-crisis mus" onclick="cambiarMision('ARTEMIS_LUNA')">🌕 Artemis (Luna)</button>
+                    <button type="button" class="btn-crisis met" onclick="cambiarMision('ARES_MARTE')">🔴 Ares (Marte)</button>
+                    <button type="button" class="btn-crisis psy" style="grid-column: span 2;" onclick="cambiarMision('EUROPA_JUPITER')">❄️ Crio-Europa (Luna Helada de Júpiter)</button>
+                </div>
+
+                <hr class="divisor">
+
+                <h2 id="lbl-sim-peligros-tit">SIMULADOR DE PELIGROS NASA</h2>
+                <p id="lbl-sim-peligros-sub" class="instruccion-ui">Dispará una anomalía en vivo para evaluar la respuesta del CDSS:</p>
+                <div class="botones-crisis">
+                    <button type="button" id="btn-sim-rad" class="btn-crisis rad" onclick="simularCrisis('TORMENTA_SOLAR')">☢️ Tormenta Solar (0G)</button>
+                    <button type="button" id="btn-sim-psy" class="btn-crisis psy" onclick="simularCrisis('CONFINAMIENTO_ROVER')">🧠 Fatiga / Pulsar Test</button>
+                    <button type="button" id="btn-sim-met" class="btn-crisis met" onclick="simularCrisis('HIPOGLUCEMIA_EVA')">🩸 Hipoglucemia + Fiebre</button>
+                    <button type="button" id="btn-sim-mus" class="btn-crisis mus" onclick="simularCrisis('ATROFIA_CERO_G')">🦴 Déficit IMTP / 0G</button>
+                </div>
+
+                <hr class="divisor">
+
+                <h2 id="lbl-form-tit">REGISTRAR MEDIDAS ESTÁNDAR (EVERYWEAR)</h2>
+                <form id="form-telemetria">
+                    <div class="fila-form">
+                        <div>
+                            <label id="lbl-in-sis">Sistólica (mmHg)</label>
+                            <input type="number" id="in-sistolica" value="118" required>
+                        </div>
+                        <div>
+                            <label id="lbl-in-dia">Diastólica (mmHg)</label>
+                            <input type="number" id="in-diastolica" value="76" required>
+                        </div>
+                    </div>
+                    <div class="fila-form">
+                        <div>
+                            <label id="lbl-in-fc">Pulso (BPM)</label>
+                            <input type="number" id="in-fc" value="72" required>
+                        </div>
+                        <div>
+                            <label id="lbl-in-glu">Glucosa (mg/dL)</label>
+                            <input type="number" step="0.1" id="in-glucosa" value="92.0" required>
+                        </div>
+                    </div>
+                    <div class="fila-form">
+                        <div>
+                            <label id="lbl-in-temp">Temp (°C)</label>
+                            <input type="number" step="0.1" id="in-temp" value="36.6" required>
+                        </div>
+                        <div>
+                            <label id="lbl-in-sueno">Actigrafía Sueño (h)</label>
+                            <input type="number" step="0.5" id="in-sueno" value="7.5" required>
+                        </div>
+                    </div>
+                    <div class="fila-form">
+                        <div>
+                            <label id="lbl-in-animo">Ánimo / Cohesión (1-5)</label>
+                            <input type="number" min="1" max="5" id="in-animo" value="5" required>
+                        </div>
+                        <div>
+                            <label id="lbl-in-ejer">Ejercicio / IMTP (min)</label>
+                            <input type="number" id="in-ejercicio" value="60" required>
+                        </div>
+                    </div>
+                    <div class="fila-form">
+                        <div>
+                            <label id="lbl-in-rad">Radiación (mSv)</label>
+                            <input type="number" step="0.1" id="in-rad" value="0.2" required>
+                        </div>
+                        <div>
+                            <label id="lbl-in-evid">Estudio / Medida Estándar</label>
+                            <select id="in-evidencia">
+                                <option value="everywear_encuesta_diaria.dat">Encuesta EveryWear Sueño/Ánimo</option>
+                                <option value="pulsar_cognition_10tests.dat">Batería Pulsar Cognition (10 pruebas)</option>
+                                <option value="actiwatch_spectrum_sleep.dat">Actigrafía Actiwatch Spectrum Plus</option>
+                                <option value="cinetosis_escala_0_20.dat">Cuestionario Cinetosis (Escala 0-20)</option>
+                                <option value="eco_carotida_intima_media.png">Ecografía Carótida (Íntima-Media)</option>
+                                <option value="imtp_traccion_isometrica_muslo.dat">Fuerza Isométrica Medio Muslo (IMTP)</option>
+                                <option value="sit_to_stand_tandem_walk.mp4">Prueba Sensoriomotora (Sit-to-Stand / Tándem)</option>
+                                <option value="panel_inmune_saliva_microbioma.dat">Muestra Saliva / Microbioma / Tubo ACD</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <label id="lbl-in-insumo">Aplicar Insumo del Botiquín (Opcional):</label>
+                    <div class="fila-form">
+                        <select id="in-insumo">
+                            <option value="">-- Ninguno --</option>
+                        </select>
+                        <input type="number" step="1" id="in-cant-insumo" value="0" min="0" placeholder="Cant.">
+                    </div>
+
+                    <button type="submit" id="btn-submit-tel" class="btn-primario">REGISTRAR Y EJECUTAR TRIAGE</button>
+                </form>
+
+                <hr class="divisor">
+                <h3 id="lbl-botiquin-tit">📦 STOCK BOTIQUÍN A BORDO</h3>
+                <ul id="lista-botiquin" class="lista-botiquin"></ul>
+            </section>
+        </div>
+    </main>
+
+    <script src="app_web.js"></script>
+</body>
+</html>
